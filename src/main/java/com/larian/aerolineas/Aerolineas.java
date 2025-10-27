@@ -29,6 +29,12 @@ public class Aerolineas {
         // Apartado 4
         eliminarVuelo(cn, "PRUEBA2");
         
+        // Apartado 5
+        actualizarPlazasFumadores(cn);
+        
+        // Apartado 6
+        insertarDatosPasajeros(cn);
+        
       } catch (SQLException e) {
         System.out.println("\n[!]Error: \n" + e + "\n");
       }
@@ -69,7 +75,6 @@ public class Aerolineas {
     }
     
     // --- Apartado 2 ---
-    
     public static void mostrarPasajeros(Connection cn, String codVuelo) throws SQLException {
       // Sentencia SQL
       String sql = "SELECT * FROM PASAJEROS WHERE COD_VUELO = ?;";
@@ -97,7 +102,6 @@ public class Aerolineas {
     }
     
     // --- Apartado 3 ---
-    
     public static void insertarVuelo(
             Connection cn,
             String codVuelo,
@@ -155,7 +159,6 @@ public class Aerolineas {
     }
 
     // --- Apartado 4 ---
-    
     public static void eliminarVuelo(Connection cn, String codVuelo) throws SQLException {
       // Sentencia SQL
       String sql = "DELETE FROM VUELOS WHERE COD_VUELO = ?;";
@@ -197,8 +200,88 @@ public class Aerolineas {
     
     
     // --- Apartado 5 ---
-    
-    // --- Apartado 6 ---  
-    
+    public static void actualizarPlazasFumadores(Connection cn) throws SQLException {
+      // Sentencia SQL
+      String sql = "UPDATE VUELOS SET PLAZAS_NO_FUMADOR = PLAZAS_NO_FUMADOR + PLAZAS_FUMADOR, PLAZAS_FUMADOR = 0;";
+      try (PreparedStatement ps = cn.prepareStatement(sql)) {
+        int filas = ps.executeUpdate();
+        System.out.println("\nPlazas de fumadores actualizadas correctamente. (" + filas + " filas modificadas)\n");
+      }
 
-}    
+      // Mostrar resultados
+      sql = "SELECT COD_VUELO, HORA_SALIDA, DESTINO, PROCEDENCIA, PLAZAS_FUMADOR, PLAZAS_NO_FUMADOR FROM VUELOS;";
+      try (PreparedStatement ps = cn.prepareStatement(sql)) {
+        ResultSet rs = ps.executeQuery();
+        System.out.println("Resultados actualizados:\n");
+        System.out.printf("%-18s %-18s %-18s %-18s %-18s %-18s%n",
+            "COD_VUELO",
+            "HORA_SALIDA",
+            "DESTINO",
+            "PROCEDENCIA",
+            "PLAZAS_FUMADOR",
+            "PLAZAS_NO_FUMADOR"
+        );
+        while (rs.next()) {
+          System.out.printf("%-18s %-18s %-18s %-18s %-18s %-18s%n",
+              rs.getString("COD_VUELO"),
+              rs.getString("HORA_SALIDA"),
+              rs.getString("DESTINO"),
+              rs.getString("PROCEDENCIA"),
+              rs.getInt("PLAZAS_FUMADOR"),
+              rs.getInt("PLAZAS_NO_FUMADOR")
+          );
+        }
+      }
+    }
+
+    // --- Apartado 6 ---
+    public static void insertarDatosPasajeros(Connection cn) throws SQLException {
+      // Sentencia SQL para crear la tabla si no existe
+      String sqlCrear = """
+        CREATE TABLE IF NOT EXISTS DATOS_PASAJEROS (
+          NUM INT(7) PRIMARY KEY,
+          DNI VARCHAR(15),
+          NOMBRE VARCHAR(30),
+          APELLIDOS VARCHAR(50)
+        );
+      """;
+      try (PreparedStatement ps = cn.prepareStatement(sqlCrear)) {
+        ps.executeUpdate();
+      }
+
+      // Insertar datos de los pasajeros del vuelo IB-SP-4567
+      String sqlInsert = """
+        INSERT INTO DATOS_PASAJEROS (NUM, DNI, NOMBRE, APELLIDOS) VALUES
+        (123, '12345678A', 'Laura', 'García Pérez'),
+        (124, '23456789B', 'Carlos', 'López Díaz'),
+        (125, '34567890C', 'María', 'Fernández Ruiz')
+        ON DUPLICATE KEY UPDATE DNI = VALUES(DNI), NOMBRE = VALUES(NOMBRE), APELLIDOS = VALUES(APELLIDOS);
+      """;
+      try (PreparedStatement ps = cn.prepareStatement(sqlInsert)) {
+        ps.executeUpdate();
+        System.out.println("\nDatos personales insertados correctamente.\n");
+      }
+
+      // Mostrar resultados
+      String sqlSelect = "SELECT * FROM DATOS_PASAJEROS;";
+      try (PreparedStatement ps = cn.prepareStatement(sqlSelect)) {
+        ResultSet rs = ps.executeQuery();
+        System.out.println("Datos personales de los pasajeros del vuelo IB-SP-4567:\n");
+        System.out.printf("%-10s %-15s %-20s %-30s%n",
+            "NUM",
+            "DNI",
+            "NOMBRE",
+            "APELLIDOS"
+        );
+        while (rs.next()) {
+          System.out.printf("%-10s %-15s %-20s %-30s%n",
+              rs.getInt("NUM"),
+              rs.getString("DNI"),
+              rs.getString("NOMBRE"),
+              rs.getString("APELLIDOS")
+          );
+        }
+      }
+    }
+
+}
